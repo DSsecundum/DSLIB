@@ -28,14 +28,14 @@ var scriptConfig = {
             'There was an error!': 'There was an error!',
             'There was an error while fetching the report data!':
                 'There was an error while fetching the report data!',
-            'Min. Level':'Min. Level',
-            'Building':'Building',
-            'Group':'Group',
-            'Calculate Commands':'Calculate Commands',
-            'Export as WB format':'Export as WB format',
-            'Max. Distance':'Max. Distance',
-            'Max lvl reduction per command':'reduce Level/command',
-            'Spy Count':'Spy Count',
+            'Min. Level': 'Min. Level',
+            'Building': 'Building',
+            'Group': 'Group',
+            'Calculate Commands': 'Calculate Commands',
+            'Export as WB format': 'Export as WB format',
+            'Max. Distance': 'Max. Distance',
+            'Max lvl reduction per command': 'reduce Level/command',
+            'Spy Count': 'Spy Count',
         },
         de_DE: {
             'Barbarian Village Former': 'Barbarendorf Teraformer',
@@ -44,14 +44,14 @@ var scriptConfig = {
             'There was an error!': 'Es gab einen Fehler!',
             'There was an error while fetching the report data!':
                 'Es gab einen fehler beim laden der Berichte!',
-            'Min. Level':'Min. Level',
-            'Building':'Gebeude',
-            'Group':'Gruppe',
-            'Calculate Commands':'Berechne Befehle',
-            'Export as WB format':'Kopiere Workbench Befehle',
-            'Max. Distance':'Maximale Distanz',
-            'Max lvl reduction per command':'Level kattern/Befehl',
-            'Spy Count':'Spy Anzahl',
+            'Min. Level': 'Min. Level',
+            'Building': 'Gebeude',
+            'Group': 'Gruppe',
+            'Calculate Commands': 'Berechne Befehle',
+            'Export as WB format': 'Kopiere Workbench Befehle',
+            'Max. Distance': 'Maximale Distanz',
+            'Max lvl reduction per command': 'Level kattern/Befehl',
+            'Spy Count': 'Spy Anzahl',
         },
     },
     allowedMarkets: [],
@@ -61,7 +61,7 @@ var scriptConfig = {
     enableCountApi: false,
 };
 
-$.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript.src}`, async function() {
+$.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript.src}`, async function () {
     // Initialize Library
     await twSDK.init(scriptConfig);
     const scriptInfo = twSDK.scriptInfo();
@@ -74,7 +74,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 
     console.log();
 
-    function arrivalByDistance(distance,offsetSec) {
+    function arrivalByDistance(distance, offsetSec) {
         const currentServerTime = twSDK.getServerDateTimeObject();
         const totalMilSeconds = distance * catRamSpeed * 60 * 1000 + offsetSec * 1000;
         return currentServerTime.getTime() + totalMilSeconds;
@@ -88,37 +88,37 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         } else {
             fetchGroups = game_data.link_base_pure + 'groups&mode=overview&ajax=load_group_menu';
         }
-        const villageGroups = await jQuery.get(fetchGroups).then((response)=>response).catch((error)=>{
-            UI.ErrorMessage('Error fetching village groups!');
-            console.error(`${scriptInfo()} Error:`, error);
-        }
+        const villageGroups = await jQuery.get(fetchGroups).then((response) => response).catch((error) => {
+                UI.ErrorMessage('Error fetching village groups!');
+                console.error(`${scriptInfo()} Error:`, error);
+            }
         );
 
         return villageGroups;
     }
 
     // Entry Point
-    (async function() {
-        try {
-            if (isValidScreen && isValidMode) {
-                // build user interface
-                const groups = await fetchVillageGroups();
-                renderUI(groups);
-                addFilterHandlers()
-            } else {
-                UI.InfoMessage(twSDK.tt('Redirecting...'));
-                twSDK.redirectTo('report&mode=attack');
+    (async function () {
+            try {
+                if (isValidScreen && isValidMode) {
+                    // build user interface
+                    const groups = await fetchVillageGroups();
+                    renderUI(groups);
+                    addFilterHandlers()
+                } else {
+                    UI.InfoMessage(twSDK.tt('Redirecting...'));
+                    twSDK.redirectTo('report&mode=attack');
+                }
+            } catch (error) {
+                UI.ErrorMessage(twSDK.tt('There was an error!'));
+                console.error(`${scriptInfo} Error:`, error);
             }
-        } catch (error) {
-            UI.ErrorMessage(twSDK.tt('There was an error!'));
-            console.error(`${scriptInfo} Error:`, error);
         }
-    }
     )();
 
     // Action Handler: Filter villages shown by selected group
     function addFilterHandlers() {
-        jQuery('#raGroupsFilter').on('change', function(e) {
+        jQuery('#raGroupsFilter').on('change', function (e) {
             e.preventDefault();
             if (DEBUG) {
                 console.debug(`${scriptInfo()} selected group ID: `, e.target.value);
@@ -132,73 +132,73 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         fetchTroopsForCurrentGroup(parseInt(groupOnLoad ?? 0)).then(function a(result) {
             troopData = result
         });
-        localStorage.setItem(`${scriptConfig.scriptData.prefix}_spy`,localStorage.getItem(`${scriptConfig.scriptData.prefix}_spy`) ?? '1')
+        localStorage.setItem(`${scriptConfig.scriptData.prefix}_spy`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_spy`) ?? '1')
         jQuery('#raSpy').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_spy`) ?? '1')
-        jQuery('#raSpy').on('change', function(e) {
+        jQuery('#raSpy').on('change', function (e) {
             e.preventDefault();
-            e.target.value = e.target.value.replace(/\D/g,'')
+            e.target.value = e.target.value.replace(/\D/g, '')
             if (DEBUG) {
                 console.debug(`${scriptInfo()} Spy count: `, e.target.value);
             }
             if (e.target.value < 1 || isNaN(parseInt(e.target.value))) {
                 jQuery('#raMaxAmount').val('1');
-                e.target.value=1;
+                e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, e.target.value);
         });
-        localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`,localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
+        localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
         jQuery('#raMaxAmount').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
-        jQuery('#raMaxAmount').on('change', function(e) {
+        jQuery('#raMaxAmount').on('change', function (e) {
             e.preventDefault();
-            e.target.value = e.target.value.replace(/\D/g,'')
+            e.target.value = e.target.value.replace(/\D/g, '')
             if (DEBUG) {
                 console.debug(`${scriptInfo()} Max Distance: `, e.target.value);
             }
             if (e.target.value < 1 || isNaN(parseInt(e.target.value))) {
                 jQuery('#raMaxAmount').val('1');
-                e.target.value=1;
+                e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, e.target.value);
         });
-        localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_step`,localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2')
+        localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_step`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2')
         jQuery('#raMaxStep').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2')
-        maxStep=parseInt(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2');
-        jQuery('#raMaxStep').on('change', function(e) {
-            e.target.value = e.target.value.replace(/\D/g,'')
+        maxStep = parseInt(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2');
+        jQuery('#raMaxStep').on('change', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '')
             e.preventDefault();
             if (DEBUG) {
                 console.debug(`${scriptInfo()} Max Step: `, e.target.value);
             }
             if (e.target.value < 1 || isNaN(parseInt(e.target.value))) {
                 jQuery('#raMaxStep').val('1');
-                e.target.value=1;
+                e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_step`, e.target.value);
-            maxStep=parseInt(e.target.value);
+            maxStep = parseInt(e.target.value);
         });
-        localStorage.setItem(`${scriptConfig.scriptData.prefix}_min_level`,localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`) ?? '0')
+        localStorage.setItem(`${scriptConfig.scriptData.prefix}_min_level`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`) ?? '0')
         jQuery('#raMinAmount').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`) ?? '0')
-        jQuery('#raMinAmount').on('change', function(e) {
-            e.target.value = e.target.value.replace(/\D/g,'')
+        jQuery('#raMinAmount').on('change', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '')
             e.preventDefault();
             if (DEBUG) {
                 console.debug(`${scriptInfo()} min building level: `, e.target.value);
             }
             if (e.target.value > 29 || isNaN(parseInt(e.target.value))) {
                 jQuery('#raMinAmount').val('29');
-                e.target.value=29;
+                e.target.value = 29;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_min_level`, e.target.value);
         });
-        localStorage.setItem(`${scriptConfig.scriptData.prefix}_chosen_building`,localStorage.getItem(`${scriptConfig.scriptData.prefix}_chosen_building`) ?? 'smith')
-        jQuery('#raBuildingFilter').on('change', function(e) {
+        localStorage.setItem(`${scriptConfig.scriptData.prefix}_chosen_building`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_chosen_building`) ?? 'smith')
+        jQuery('#raBuildingFilter').on('change', function (e) {
             e.preventDefault();
             if (DEBUG) {
                 console.debug(`${scriptInfo()} selected building: `, e.target.value);
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_chosen_building`, e.target.value);
         });
-        jQuery('#calculateLaunchTimes').on('click', function(e) {
+        jQuery('#calculateLaunchTimes').on('click', function (e) {
             e.preventDefault();
 
             // collect user input and destination village
@@ -213,7 +213,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
             getReports(building, minAmount);
 
         });
-        jQuery('#exportBBCodeBtn').on('click', function(e) {
+        jQuery('#exportBBCodeBtn').on('click', function (e) {
             e.preventDefault();
             twSDK.copyToClipboard($('#barbCoordsList').val());
         })
@@ -227,7 +227,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 		<select name="ra_groups_filter" id="raGroupsFilter">
 	`;
 
-        for (const [_,group] of Object.entries(groups.result)) {
+        for (const [_, group] of Object.entries(groups.result)) {
             const {group_id, name} = group;
             const isSelected = parseInt(group_id) === parseInt(groupId) ? 'selected' : '';
             if (name !== undefined) {
@@ -377,7 +377,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         const reportData = [];
         const reportUrls = getReportUrls();
         twSDK.startProgressBar(reportUrls.length);
-        twSDK.getAll(reportUrls, function(index, data) {
+        twSDK.getAll(reportUrls, function (index, data) {
             twSDK.updateProgressBar(index, reportUrls.length);
 
             const parser = new DOMParser();
@@ -406,20 +406,20 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                 //console.log(e);
             }
 
-        }, function() {
+        }, function () {
             const commands = doCalculations(reportData);
             let wbCommands = ""
             let i = 0;
-            commands.forEach(function(command) {
-                wbCommands += convertWbCommand(command,i);
+            commands.forEach(function (command) {
+                wbCommands += convertWbCommand(command, i);
                 i++;
             });
-            if(commands.length==0){
+            if (commands.length == 0) {
                 UI.SuccessMessage("All perfect");
             }
             $('#barbCoordsList').val(wbCommands);
             const content = ``;
-            }, function(error) {
+        }, function (error) {
             UI.ErrorMessage(twSDK.tt('There was an error while fetching the report data!'));
             console.error(`${scriptInfo} Error: `, error);
         });
@@ -453,7 +453,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         }
 
         // Sort combinations by distance in ascending order
-        combinations.sort((a,b)=>a.distance - b.distance);
+        combinations.sort((a, b) => a.distance - b.distance);
 
         return combinations;
     }
@@ -619,86 +619,86 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 
     }
 
-    function convertWbCommand(c,i) {
+    function convertWbCommand(c, i) {
         //let wbCommand = `${id}&${VillageInfo.village_id}&${unit}&${arrivalTime}&${attackType}&false&false&${unit}=${btoa(unitAmount)}\\n`;
-        return `${c.playerVillage.villageId}&${c.barbarianVillage.villageId}&${c.ram > 0 ? 'ram' : 'catapult'}&${arrivalByDistance(c.distance,i)}&9&false&false&` + `spear=/sword=/axe=${btoa(c.axe)}/archer=/spy=${btoa(c.spy)}/light=/marcher=/heavy=/ram=${btoa(c.ram)}/catapult=${btoa(c.catapult)}/knight=/snob=/militia=MA==\n`;
+        return `${c.playerVillage.villageId}&${c.barbarianVillage.villageId}&${c.ram > 0 ? 'ram' : 'catapult'}&${arrivalByDistance(c.distance, i)}&9&false&false&` + `spear=/sword=/axe=${btoa(c.axe)}/archer=/spy=${btoa(c.spy)}/light=/marcher=/heavy=/ram=${btoa(c.ram)}/catapult=${btoa(c.catapult)}/knight=/snob=/militia=MA==\n`;
     }
 
     // Helper: Fetch home troop counts for current group
     async function fetchTroopsForCurrentGroup(groupId) {
         const mobileCheck = $('#mobileHeader').length > 0;
-        const troopsForGroup = await jQuery.get(game_data.link_base_pure + `overview_villages&mode=combined&group=${groupId}&page=-1`).then(async(response)=>{
-            const htmlDoc = jQuery.parseHTML(response);
-            const homeTroops = [];
+        const troopsForGroup = await jQuery.get(game_data.link_base_pure + `overview_villages&mode=combined&group=${groupId}&page=-1`).then(async (response) => {
+                const htmlDoc = jQuery.parseHTML(response);
+                const homeTroops = [];
 
-            if (mobileCheck) {
-                let table = jQuery(htmlDoc).find('#combined_table tr.nowrap');
-                for (let i = 0; i < table.length; i++) {
-                    let objTroops = {};
-                    let coord = table[i].getElementsByClassName('quickedit-label')[0].innerHTML;
-                    let villageId = parseInt(table[i].getElementsByClassName('quickedit-vn')[0].getAttribute('data-id'));
-                    let listTroops = Array.from(table[i].getElementsByTagName('img')).filter((e)=>e.src.includes('unit')).map((e)=>({
-                        name: e.src.split('unit_')[1].replace('@2x.png', ''),
-                        value: parseInt(e.parentElement.nextElementSibling.innerText),
-                    }));
-                    listTroops.forEach((item)=>{
-                        objTroops[item.name] = item.value;
-                    }
-                    );
-                    objTroops.coord = twSDK.getCoordFromString(coord);
-                    objTroops.villageId = villageId;
-
-                    homeTroops.push(objTroops);
-                }
-            } else {
-                const combinedTableRows = jQuery(htmlDoc).find('#combined_table tr.nowrap');
-                const combinedTableHead = jQuery(htmlDoc).find('#combined_table tr:eq(0) th');
-
-                const combinedTableHeader = [];
-
-                // collect possible buildings and troop types
-                jQuery(combinedTableHead).each(function() {
-                    const thImage = jQuery(this).find('img').attr('src');
-                    if (thImage) {
-                        let thImageFilename = thImage.split('/').pop();
-                        thImageFilename = thImageFilename.replace('.png', '');
-                        combinedTableHeader.push(thImageFilename);
-                    } else {
-                        combinedTableHeader.push(null);
-                    }
-                });
-
-                // collect possible troop types
-                combinedTableRows.each(function() {
-                    let rowTroops = {};
-
-                    combinedTableHeader.forEach((tableHeader,index)=>{
-                        if (tableHeader) {
-                            if (tableHeader.includes('unit_')) {
-                                const coord = twSDK.getCoordFromString(jQuery(this).find('td:eq(1) span.quickedit-label').text());
-                                const villageId = jQuery(this).find('td:eq(1) span.quickedit-vn').attr('data-id');
-                                const unitType = tableHeader.replace('unit_', '');
-                                rowTroops = {
-                                    ...rowTroops,
-                                    villageId: parseInt(villageId),
-                                    coord: coord,
-                                    [unitType]: parseInt(jQuery(this).find(`td:eq(${index})`).text()),
-                                };
+                if (mobileCheck) {
+                    let table = jQuery(htmlDoc).find('#combined_table tr.nowrap');
+                    for (let i = 0; i < table.length; i++) {
+                        let objTroops = {};
+                        let coord = table[i].getElementsByClassName('quickedit-label')[0].innerHTML;
+                        let villageId = parseInt(table[i].getElementsByClassName('quickedit-vn')[0].getAttribute('data-id'));
+                        let listTroops = Array.from(table[i].getElementsByTagName('img')).filter((e) => e.src.includes('unit')).map((e) => ({
+                            name: e.src.split('unit_')[1].replace('@2x.png', ''),
+                            value: parseInt(e.parentElement.nextElementSibling.innerText),
+                        }));
+                        listTroops.forEach((item) => {
+                                objTroops[item.name] = item.value;
                             }
-                        }
+                        );
+                        objTroops.coord = twSDK.getCoordFromString(coord);
+                        objTroops.villageId = villageId;
+
+                        homeTroops.push(objTroops);
                     }
-                    );
+                } else {
+                    const combinedTableRows = jQuery(htmlDoc).find('#combined_table tr.nowrap');
+                    const combinedTableHead = jQuery(htmlDoc).find('#combined_table tr:eq(0) th');
 
-                    homeTroops.push(rowTroops);
-                });
+                    const combinedTableHeader = [];
+
+                    // collect possible buildings and troop types
+                    jQuery(combinedTableHead).each(function () {
+                        const thImage = jQuery(this).find('img').attr('src');
+                        if (thImage) {
+                            let thImageFilename = thImage.split('/').pop();
+                            thImageFilename = thImageFilename.replace('.png', '');
+                            combinedTableHeader.push(thImageFilename);
+                        } else {
+                            combinedTableHeader.push(null);
+                        }
+                    });
+
+                    // collect possible troop types
+                    combinedTableRows.each(function () {
+                        let rowTroops = {};
+
+                        combinedTableHeader.forEach((tableHeader, index) => {
+                                if (tableHeader) {
+                                    if (tableHeader.includes('unit_')) {
+                                        const coord = twSDK.getCoordFromString(jQuery(this).find('td:eq(1) span.quickedit-label').text());
+                                        const villageId = jQuery(this).find('td:eq(1) span.quickedit-vn').attr('data-id');
+                                        const unitType = tableHeader.replace('unit_', '');
+                                        rowTroops = {
+                                            ...rowTroops,
+                                            villageId: parseInt(villageId),
+                                            coord: coord,
+                                            [unitType]: parseInt(jQuery(this).find(`td:eq(${index})`).text()),
+                                        };
+                                    }
+                                }
+                            }
+                        );
+
+                        homeTroops.push(rowTroops);
+                    });
+                }
+
+                return homeTroops;
             }
-
-            return homeTroops;
-        }
-        ).catch((error)=>{
-            UI.ErrorMessage(tt('An error occured while fetching troop counts!'));
-            console.error(`${scriptInfo()} Error:`, error);
-        }
+        ).catch((error) => {
+                UI.ErrorMessage(tt('An error occured while fetching troop counts!'));
+                console.error(`${scriptInfo()} Error:`, error);
+            }
         );
 
         return troopsForGroup;
@@ -708,7 +708,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     function getReportUrls() {
         const reportUrls = [];
 
-        jQuery('#report_list tbody tr').each(function() {
+        jQuery('#report_list tbody tr').each(function () {
             const reportUrl = jQuery(this).find('.report-link').attr('href');
             if (typeof reportUrl !== 'undefined' && reportUrl !== '') {
                 reportUrls.push(reportUrl);
