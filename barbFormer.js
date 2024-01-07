@@ -1,5 +1,5 @@
 /*
- * Script Name: Barbarian Vilalge Former
+ * Script Name: Barbarian Village Former
  * Version: v1
  * Last Updated: 2023-12-01
  * Author Contact: secundum
@@ -9,7 +9,6 @@
 if (typeof DEBUG !== 'boolean')
     DEBUG = false;
 
-// Script Config
 // Script Config
 var scriptConfig = {
     scriptData: {
@@ -23,7 +22,7 @@ var scriptConfig = {
     translations: {
         en_DK: {
             'Barbarian Village Former': 'Barbarian Village Former',
-            Help: 'Help',
+            Help: 'Help', // Mistake?
             'Redirecting...': 'Redirecting...',
             'There was an error!': 'There was an error!',
             'There was an error while fetching the report data!':
@@ -39,13 +38,13 @@ var scriptConfig = {
         },
         de_DE: {
             'Barbarian Village Former': 'Barbarendorf Teraformer',
-            Help: 'Hilfe',
+            Help: 'Hilfe', // Mistake?
             'Redirecting...': 'Umleiten...',
             'There was an error!': 'Es gab einen Fehler!',
             'There was an error while fetching the report data!':
                 'Es gab einen fehler beim laden der Berichte!',
             'Min. Level': 'Min. Level',
-            'Building': 'Gebeude',
+            'Building': 'Gebaeude',
             'Group': 'Gruppe',
             'Calculate Commands': 'Berechne Befehle',
             'Export as WB format': 'Kopiere Workbench Befehle',
@@ -70,7 +69,6 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     let troopData = [];
     let unitInfo = await twSDK.getWorldUnitInfo();
     const catRamSpeed = parseInt(unitInfo.config.ram.speed);
-    let maxStep = 2;
 
     console.log();
 
@@ -101,7 +99,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     (async function () {
             try {
                 if (isValidScreen && isValidMode) {
-                    // build user interface
+                    // Build user interface
                     const groups = await fetchVillageGroups();
                     renderUI(groups);
                     addFilterHandlers()
@@ -141,28 +139,27 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                 console.debug(`${scriptInfo()} Spy count: `, e.target.value);
             }
             if (e.target.value < 1 || isNaN(parseInt(e.target.value))) {
-                jQuery('#raMaxAmount').val('1');
+                jQuery('#raSpy').val('1');
                 e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, e.target.value);
         });
         localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
-        jQuery('#raMaxAmount').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
-        jQuery('#raMaxAmount').on('change', function (e) {
+        jQuery('#raMaxDistance').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`) ?? '10')
+        jQuery('#raMaxDistance').on('change', function (e) {
             e.preventDefault();
             e.target.value = e.target.value.replace(/\D/g, '')
             if (DEBUG) {
                 console.debug(`${scriptInfo()} Max Distance: `, e.target.value);
             }
             if (e.target.value < 1 || isNaN(parseInt(e.target.value))) {
-                jQuery('#raMaxAmount').val('1');
+                jQuery('#raMaxDistance').val('1');
                 e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_distance`, e.target.value);
         });
         localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_step`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2')
         jQuery('#raMaxStep').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2')
-        maxStep = parseInt(localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`) ?? '2');
         jQuery('#raMaxStep').on('change', function (e) {
             e.target.value = e.target.value.replace(/\D/g, '')
             e.preventDefault();
@@ -174,7 +171,6 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                 e.target.value = 1;
             }
             localStorage.setItem(`${scriptConfig.scriptData.prefix}_max_step`, e.target.value);
-            maxStep = parseInt(e.target.value);
         });
         localStorage.setItem(`${scriptConfig.scriptData.prefix}_min_level`, localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`) ?? '0')
         jQuery('#raMinAmount').val(localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`) ?? '0')
@@ -201,16 +197,9 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         jQuery('#calculateLaunchTimes').on('click', function (e) {
             e.preventDefault();
 
-            // collect user input and destination village
-            const maxDistance = localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`);
-            //parseInt(jQuery('#raMaxAmount').val().trim());
-            const minAmount = localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`);
-            //parseInt(jQuery('#raMinAmount').val().trim());
-
-            const groupId = localStorage.getItem(`${scriptConfig.scriptData.prefix}_chosen_group`);
-            const building = localStorage.getItem(`${scriptConfig.scriptData.prefix}_chosen_building`);
-
-            getReports(building, minAmount);
+            // Start all the calculations
+            // TODO Rename functions
+            getReports();
 
         });
         jQuery('#exportBBCodeBtn').on('click', function (e) {
@@ -277,7 +266,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 			<div class="ra-grid">
 			    <div>
 					<label>${twSDK.tt('Max. Distance')}</label>
-					<input id="raMaxAmount" type="text" value="30">
+					<input id="raMaxDistance" type="text" value="30">
 				</div>
                                                          <div>
 					<label>${twSDK.tt('Spy Count')}</label>
@@ -372,8 +361,9 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     }
 
     // Render: Build user interface
-    function getReports(buildingType, minLevel) {
+    function getReports() {
 
+        const buildingType = localStorage.getItem(`${scriptConfig.scriptData.prefix}_chosen_building`);
         const reportData = [];
         const reportUrls = getReportUrls();
         twSDK.startProgressBar(reportUrls.length);
@@ -382,7 +372,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(data, 'text/html');
-            //read building data
+            // Read building data
             let report = null;
             try {
                 report = JSON.parse(jQuery(htmlDoc).find('#attack_spy_building_data')[0].defaultValue);
@@ -402,8 +392,8 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                     reportData.push(reportInfo);
                 }
             } catch (e) {
-                //not usable Report
-                //console.log(e);
+                // Not usable Report
+                // console.log(e);
             }
 
         }, function () {
@@ -418,18 +408,17 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                 UI.SuccessMessage("All perfect");
             }
             $('#barbCoordsList').val(wbCommands);
-            const content = ``;
         }, function (error) {
             UI.ErrorMessage(twSDK.tt('There was an error while fetching the report data!'));
             console.error(`${scriptInfo} Error: `, error);
         });
     }
 
-    // retourne force d'attaque necessaire
-    function troopStrengthRequired(wallLevel) {
-        // heuristique: 30 haches(Force d'attaque=40) * <niveau mur>
-        // +10 haches en bonus
-        return 30 * 40 * wallLevel;
+    // returns necessary amount of axes
+    function axesRequired(wallLevel) {
+        // calculation: 30 axes * <wall level>
+        // +10 bonus axes
+        return 30 * wallLevel + 10;
     }
 
     // Function to calculate all possible combinations of player villages and barbarian villages
@@ -439,7 +428,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         for (const playerVillage of playerVillages) {
             for (const barbarianVillage of barbarianVillages) {
                 const distance = twSDK.calculateDistance(playerVillage.coord, barbarianVillage.coord);
-                const wallPossible = barbarianVillage.wall > 0 && playerVillage.ram >= ramsMin[barbarianVillage.wall] && playerVillage.axe >= troopStrengthRequired(barbarianVillage.wall) / 30;
+                const wallPossible = barbarianVillage.wall > 0 && playerVillage.ram >= ramsMin[barbarianVillage.wall] && playerVillage.axe >= axesRequired(barbarianVillage.wall);
                 const catPossible = barbarianVillage.building > minLevel && playerVillage.catapult >= catsMin[barbarianVillages.building];
                 // Check if the distance is within the maximum allowed distance and any reduction is possible
                 if (distance <= maxDistance && (wallPossible || catPossible)) {
@@ -458,7 +447,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
         return combinations;
     }
 
-    const ramsRequired = [0, 2, 4, 7, 10, 14, 19, 24, 30, 37, 45, 55, 65, 77, 91, 106, 124, 143, 166, 191, 219];
+    const ramsRequired = [0, 2, 4, 7, 10, 14, 19, 24, 30, 38, 46, 55, 65, 77, 91, 106, 124, 144, 166, 191, 220];
     /* to break a wall at [i] level to 0.*/
     const ramsMin = [0, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6];
     /*to break a wall at [i] level by 1 level*/
@@ -500,25 +489,27 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     const catsMin = [0, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13, 15, 16, 17, 19, 20];
     /*to break a building at level [i] by 1*/
 
-    // returns the max pissible level reduction
+    // returns the max possible level reduction towards minLevel within maxStep
     function requiredCatas(maxCata, currentLevel, minLevel, maxStep) {
         if (currentLevel <= minLevel || catsMin[currentLevel] > maxCata) {
             return 0;
             // No catapults needed if already at or below the minLevel or not enough of them
         }
-        // reduce minLevel if reuction would be greater than max steps.
-        minLevel = (currentLevel - minLevel) > maxStep ? maxStep : minLevel;
 
-        let remainingLevels = currentLevel - minLevel;
-        let totalCatas = 0;
+        // Check if the maximum amount of building levels that need to be destroyed is smaller than maxStep and reduce maxStep accordingly if needed
+        let maxDestroyed = (currentLevel - minLevel) < maxStep ? (currentLevel - minLevel) : maxStep;
 
-        // Iterate through the catasRequiredArray to calculate the required catapults
-        for (let i = minLevel; i <= currentLevel; i++) {
-            const catasRequired = catsRequiredToBreak[i][currentLevel];
+        // Iterate top down through the cata steps until we find  the biggest cata step we can do with the amount of catas we have and within the maxStep
+        for (let i = maxDestroyed; i == 0; i--) {
 
+            // Gets the required catas to destroy "i" building levels
+            const catasRequired = catsRequiredToBreak[currentLevel - i][currentLevel];
+
+            // if we have enough catas in the village to destroy "i" building levels we return the amount of destroyed levels
+            // otherwise we run the loop again decreasing the amount of destroyed building levels until we have enough catas
+            // we should have enough catas for "i == 1" since we checked at the start
             if (maxCata >= catasRequired) {
-                // If maxCata is enough to break to the next level, use the maximum possible
-                return currentLevel - i;
+                return i;
             }
         }
 
@@ -526,72 +517,94 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     }
 
     // Function to find troop combinations for a specific attack with consideration of dLastAttack
-    function findTroopCombination(playerVillage, barbarianVillage, minLevel) {
+    function findTroopCombination(playerVillage, barbarianVillage, distance, minLevel, maxStep, spyAmount) {
         let combinations = [];
+        let maxReduction = 0;
+        let catapultsRequired = 0;
 
-        while (barbarianVillage.wall > 0 || barbarianVillage.building > minLevel) {
-            // Calculate the required axes for rams and catapults
-            const axesRequired = Math.ceil(troopStrengthRequired(barbarianVillage.wall) / 30);
+        // Get the required rams to reduce wall to 0
+        const ramsReq = ramsRequired[barbarianVillage.wall];
+        // Calculate the required axes for rams
+        const axesRequired = Math.ceil(axesRequired(barbarianVillage.wall));
 
-            // Check if the available troops are sufficient in the player village
-            if (playerVillage.axe >= axesRequired && playerVillage.spy >= 1) {
-                // Reduce wall level to 0
-                let ramsReq = ramsRequired[barbarianVillage.wall];
-                let maxReduction = requiredCatas(playerVillage.catapult, barbarianVillage.building, minLevel, maxStep);
-                let catapultsRequired = catsRequiredToBreak[barbarianVillage.building - maxReduction][barbarianVillage.building];
-
-                // Check any building reduction can be done
-                if (ramsReq && playerVillage.ram >= ramsReq || catapultsRequired && playerVillage.catapult >= catapultsRequired) {
-                    if (playerVillage.ram >= ramsReq) {
-                        barbarianVillage.wall = 0;
-                    } else {
-                        break;
-                        //not enough to reduce wall to 0
-                    }
-                    if (playerVillage.catapult >= catapultsRequired) {
-                        playerVillage.catapult -= catapultsRequired;
-                        barbarianVillage.building -= maxReduction;
-                    } else {
-                        maxReduction = 0;
-                        catapultsRequired = 0;
-                    }
-                    playerVillage.axe -= axesRequired;
-                    // Update dLastAttack for the barbarian village
-                    const distance = twSDK.calculateDistance(playerVillage.coord, barbarianVillage.coord);
-                    barbarianVillage.dLastAttack = distance
-                    combinations.push({
-                        barbarianVillage,
-                        playerVillage,
-                        axe: axesRequired,
-                        spy: 1,
-                        ram: ramsReq,
-                        catapult: catapultsRequired,
-                        reducedBuildingLevel: maxReduction,
-                        distance: distance,
-                    });
-
-                } else {
-                    break;
-                    //no enough ramms or catapults
-                }
-            } else {
-                break;
-                // not enough axes to accomedate troops
-            }
+        // If there is a wall and we either dont have enough axes or rams to reduce it to 0 we quit
+        // We also quit if there are not enough spies
+        if ((barbarianVillage.wall > 0 && (playerVillage.ram < ramsReq || playerVillage.axe < axesRequired)) || playerVillage.spy < spyAmount) {
+            return combinations;
         }
 
+        // Now if there is a wall we know that we can destroy it and so we do
+        // Doing it this way and not sending any catapults in the ram attack might be a waste of a spy but it makes the code nicer to look at imo
+        if (barbarianVillage.wall > 0) {
+            // we set the wall to 0 and subtract used axes and rams and spies
+            playerVillage.axe -= axesRequired;
+            playerVillage.ram -= ramsReq;
+            barbarianVillage.wall = 0;
+            playerVillage.spy -= spyAmount;
+
+
+            // TODO What does this do?
+            barbarianVillage.dLastAttack = distance;
+
+            // We add the Wall bash attack to our attack list
+            combinations.push({
+                barbarianVillage,
+                playerVillage,
+                axe: axesRequired,
+                spy: spyAmount,
+                ram: ramsReq,
+                catapult: 0,
+                distance: distance
+            });
+        }
+
+        // Now that the wall is 0 we can start destroying the building while considering maxStep
+        // Run the loop while the building is above minLevel and the playerVillage has enough spies
+        while (barbarianVillage.building > minLevel && playerVillage.spy >= spyAmount) {
+            // Check how many building levels we can destroy in this attack 
+            maxReduction = requiredCatas(playerVillage.catapult, barbarianVillage.building, minLevel, maxStep);
+            // Check how many catapults we need to destroy those building levels
+            catapultsRequired = catsRequiredToBreak[barbarianVillage.building - maxReduction][barbarianVillage.building];
+
+            // If we can't destroy a building level we quit
+            if (maxReduction == 0) {
+                break;
+            }
+
+            // If we can destroy at least one building level we subtract used catapults and spies and we subtract the destroyed building level
+            playerVillage.catapult -= catapultsRequired;
+            barbarianVillage.building -= maxReduction;
+            playerVillage.spy -= spyAmount;
+
+            // Update dLastAttack for the barbarian village
+            // TODO What does this do?
+            barbarianVillage.dLastAttack = distance;
+
+            // Add the attack to our attack list
+            combinations.push({
+                barbarianVillage,
+                playerVillage,
+                axe: 0,
+                spy: spyAmount,
+                ram: 0,
+                catapult: catapultsRequired,
+                distance: distance
+            });
+        }
+
+        // Return all the attacks
         return combinations;
     }
 
     // Function to find troop combinations for all attacks with consideration of dLastAttack
-    function findTroopCombinations(playerVillages, barbarianVillages, minLevel, maxDistance) {
+    function findTroopCombinations(playerVillages, barbarianVillages, minLevel, maxDistance, maxStep, spyAmount) {
         let result = [];
 
         const allCombinations = calculateAllCombinations(playerVillages, barbarianVillages, minLevel, maxDistance);
 
         for (const combination of allCombinations) {
-            const {playerVillage, barbarianVillage} = combination;
-            const troopCombinations = findTroopCombination(playerVillage, barbarianVillage, minLevel);
+            const {playerVillage, barbarianVillage, distance} = combination;
+            const troopCombinations = findTroopCombination(playerVillage, barbarianVillage, distance, minLevel, maxStep, spyAmount);
 
             if (troopCombinations.length) {
                 result = result.concat(troopCombinations);
@@ -602,17 +615,23 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 
     // Helper: Do farming calculations
     function doCalculations(farmingData) {
-        //todo combine calculations
+        // TODO Combine calculations
         console.log('Starting calculating Commands...');
 
-        const maxDistance = localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`);
-        //parseInt(jQuery('#raMaxAmount').val().trim());
         // maxDistance for attacks
-        const minLevel = localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`);
-        //parseInt(jQuery('#raMinAmount').val().trim());
-        //  your desired min building Level
+        const maxDistance = localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_distance`);
 
-        const troopCombinations = findTroopCombinations(troopData, farmingData, minLevel, maxDistance);
+        // minimum building level
+        const minLevel = localStorage.getItem(`${scriptConfig.scriptData.prefix}_min_level`);
+
+        // max amount of building levels to destroy
+        const maxStep = localStorage.getItem(`${scriptConfig.scriptData.prefix}_max_step`);
+
+        // amount of spys in a attack
+        const spyAmount = localStorage.getItem(`${scriptConfig.scriptData.prefix}_spy`);
+
+
+        const troopCombinations = findTroopCombinations(troopData, farmingData, minLevel, maxDistance, maxStep, spyAmount);
         console.log(troopCombinations);
         console.log('##Done##')
         return troopCombinations;
@@ -620,7 +639,6 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
     }
 
     function convertWbCommand(c, i) {
-        //let wbCommand = `${id}&${VillageInfo.village_id}&${unit}&${arrivalTime}&${attackType}&false&false&${unit}=${btoa(unitAmount)}\\n`;
         return `${c.playerVillage.villageId}&${c.barbarianVillage.villageId}&${c.ram > 0 ? 'ram' : 'catapult'}&${arrivalByDistance(c.distance, i)}&9&false&false&` + `spear=/sword=/axe=${btoa(c.axe)}/archer=/spy=${btoa(c.spy)}/light=/marcher=/heavy=/ram=${btoa(c.ram)}/catapult=${btoa(c.catapult)}/knight=/snob=/militia=MA==\n`;
     }
 
@@ -656,7 +674,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
 
                     const combinedTableHeader = [];
 
-                    // collect possible buildings and troop types
+                    // Collect possible buildings and troop types
                     jQuery(combinedTableHead).each(function () {
                         const thImage = jQuery(this).find('img').attr('src');
                         if (thImage) {
@@ -668,7 +686,7 @@ $.getScript(`https://twscripts.dev/scripts/twSDK.js?url=${document.currentScript
                         }
                     });
 
-                    // collect possible troop types
+                    // Collect possible troop types
                     combinedTableRows.each(function () {
                         let rowTroops = {};
 
