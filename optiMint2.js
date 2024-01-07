@@ -59,6 +59,9 @@ function getDataProduction(groupId) {
                                         merchants_total: m,
                                         capacity: u,
                                         points: g,
+                                        result_wood:r,
+                                        result_stone:i,
+                                        result_iron:d,
                                     };
                                 s.push(h),
                                     l.set(o, p)
@@ -89,7 +92,10 @@ function getDataProduction(groupId) {
                                         merchants: c,
                                         merchants_total: m,
                                         capacity: u,
-                                        points: g
+                                        points: g,
+                                        result_wood:r,
+                                        result_stone:i,
+                                        result_iron:d,
                                     };
                                 s.push(h),
                                     l.set(o, p)
@@ -215,6 +221,9 @@ var travelTimePerUnit = 3.75;
 // in minutes
 var tradersSendingFrequency = 20;
 // in minutes
+
+let whReserve = 5;
+let overflowProtection = 0;
 
 // Function to calculate the distance between two coordinates
 function calculateDistance(coord1, coord2) {
@@ -376,6 +385,8 @@ function allocateTraders(villages, centralVillage, allRoutes) {
     ;
 }
 
+let centralVillage
+
 async function start(middleVillage, group) {
 
     let centralCoordinates = null;
@@ -500,7 +511,7 @@ function kMeansClusteringWithStatsForMap(inputMap, k) {
     inputMap.forEach(function (value, key) {
         var clusterIndex = findClosestClusterIndex(value, clusters);
         clusterObjects[clusterIndex].keys.push(key);
-        clusterObjects[clusterIndex].values.push(value);
+        //clusterObjects[clusterIndex].values.push(value);
     });
 
     return clusterObjects;
@@ -529,46 +540,10 @@ function calculateMean(array) {
         }, 0) / array.length;
 }
 
-function shadeColor(color, percent) {
-
-    var R = parseInt(color.substring(1, 3), 16);
-    var G = parseInt(color.substring(3, 5), 16);
-    var B = parseInt(color.substring(5, 7), 16);
-
-    R = parseInt(R * (100 + percent) / 100);
-    G = parseInt(G * (100 + percent) / 100);
-    B = parseInt(B * (100 + percent) / 100);
-
-    R = (R < 255) ? R : 255;
-    G = (G < 255) ? G : 255;
-    B = (B < 255) ? B : 255;
-
-    R = Math.round(R)
-    G = Math.round(G)
-    B = Math.round(B)
-
-    var RR = ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
-    var GG = ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
-    var BB = ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
-
-    return "#" + RR + GG + BB;
-}
-
 const RGB_Linear_Shade = (p, c) => {
     var i = parseInt, r = Math.round, [a, b, c, d] = c.split(","), P = p < 0, t = P ? 0 : 255 * p,
         P = P ? 1 + p : 1 - p;
     return "rgb" + (d ? "a(" : "(") + r(i(a[3] == "a" ? a.slice(5) : a.slice(4)) * P + t) + "," + r(i(b) * P + t) + "," + r(i(c) * P + t) + (d ? "," + d : ")");
-}
-
-function RGB_Linear_Blend(p, c0, c1) {
-    var i = parseInt
-        , r = Math.round
-        , P = 1 - p
-        , [a, b, c, d] = c0.split(",")
-        , [e, f, g, h] = c1.split(",")
-        , x = d || h
-        , j = x ? "," + (!d ? h : !h ? d : r((parseFloat(d) * P + parseFloat(h) * p) * 1000) / 1000 + ")") : ")";
-    return "rgb" + (x ? "a(" : "(") + r(i(a[3] == "a" ? a.slice(5) : a.slice(4)) * P + i(e[3] == "a" ? e.slice(5) : e.slice(4)) * p) + "," + r(i(b) * P + i(f) * p) + "," + r(i(c) * P + i(g) * p) + j;
 }
 
 var textColor = "#ffffff"
@@ -684,12 +659,26 @@ function createMapInfo(e) {
     }
 }
 
+function addTransportToVillageTotal(villagesData,transport) {
+    villagesData.forEach((village) => {
+        let tData = transport.get(village.coord);
+        if(typeof tData != 'undefined') {
+            for (let comand of tData) {
+                village.total_wood+=comand.wood;
+                village.total_stone+=comand.stone;
+                village.total_iron+=comand.iron;
+            }
+        }
+    })
+}
+
 function generateLaunchList(villagesData, routes, transport) {
+    addTransportToVillageTotal(villagesData,transport);
     let x = []; // single trades
     villagesData.forEach((village) => {
         // get min distribution multiplier
         let max = village.merchants;
-        let res = [village.wood, village.stone, village.iron];
+        let res = [village.wood, village.stone, village.iron].map((e,i)=>Math.max(0,e-village.capacity*(whReserve/100)));
         let res_multiplier = res.map((x, i) => parseInt(x / [28, 30, 25][i]));
         res_multiplier.push(parseInt(max * 1000 / 83));
         let multiplier = Math.min(...res_multiplier);
@@ -707,7 +696,19 @@ function generateLaunchList(villagesData, routes, transport) {
             let freeMerchants = route.merchants - ttod - ttos;
             if (freeMerchants > 0 && multiplier > 11) {
                 let rMulti = parseInt(freeMerchants * 1000 / 83)
-                rMulti = Math.min(multiplier, rMulti)
+                let target = villMap.get(route.destination);
+                let res_multiplier_target = [multiplier]
+                if(overflowProtection>0){ //overflow Storage setting
+                    let res_target = [target.result_wood, target.result_stone, target.result_iron].map((e,i)=>Math.max(0,target.capacity*(overflowProtection/100)-e));
+                    res_multiplier_target = res_target.map((x, i) => parseInt(x / [28, 30, 25][i]));
+                    rMulti = Math.min(multiplier, rMulti,Math.min(...res_multiplier_target))
+                    if(Math.min(multiplier, rMulti)>Math.min(...res_multiplier_target)){
+                        debugger;
+                    }
+                } else {
+                    rMulti = Math.min(multiplier, rMulti,Math.min(...res_multiplier_target))
+                }
+                if(rMulti > 11){
                 while (rMulti * 83 % 1000 < 900 && rMulti > 0) {
                     rMulti--;
                 }
@@ -727,8 +728,18 @@ function generateLaunchList(villagesData, routes, transport) {
                     name_destination: villMap.get(route.destination).name,
                     distance: route.distance
                 })
+                village.result_wood-=c;
+                village.result_stone-=m;
+                village.result_iron-=u;
+                target.result_wood+=c;
+                target.result_stone+=m;
+                target.result_iron+=u;
+                }
             }
         })
+    });
+    villagesData.forEach((village) => {
+        village.result_total = Math.max(village.result_wood,village.result_stone,village.result_iron);
     });
 
     let A = new Map;
@@ -887,6 +898,15 @@ function createMainInterface() {
         '                            </div>\n' +
         '                        </td>\n' +
         '                    </tr>\n' +
+        '                    <tr>\n' +
+        '                        <td>overflow protection [only pre mint]</td>\n' +
+        '                        <td>\n' +
+        '                            <div style="display:flex;justify-content: center; align-items: center;">\n' +
+        '                                <div><input type="number" id="overflowProtection" class="scriptInput" min="0" max="100" placeholder="0" value="0"></div>\n' +
+        '                                <div><a href="#" onclick="UI.InfoMessage(`Only to be used before minting. Moves res closer to central Village. 0 = deactivated and  90 = 90% WH capacity`,15000)"><img src="https://dsen.innogamescdn.com/asset/dbeaf8db/graphic/questionmark.png" style="width: 13px; height: 13px"/></a></div>\n' +
+        '                            </div>\n' +
+        '                        </td>\n' +
+        '                    </tr> \n\n' +
         '                </table>\n            </center>\n\n            <center>\n' +
         '                <input class="btn evt-confirm-btn btn-confirm-yes" type="button" onclick="go()" style="margin:10px" value="start">\n            </center>\n\n' +
         '            <div id="div_tables" hidden>\n' +
@@ -1080,21 +1100,21 @@ async function createTable(e, t, n, o) {
     function statsRow(percentil) {
         const bValue = bCluster[1].values.sort((a,b)=>a-b)[Math.round(bCluster[1].values.length*percentil/100)]
         const aValue = aCluster[1].values.sort((a,b)=>a-b)[Math.round(aCluster[1].values.length*percentil/100)]
-        return `\n        <tr>\n            <td colspan="2">${percentil+""}%</td>\n            <td>${formatNumber(bValue)}</td>\n            <td>${formatNumber(aValue)}</td>\n            <td>${formatNumber(aValue-bValue)}</td>\n       \n        </tr>`
+        return `\n        <tr>\n            <td colspan="2">lowest value ${100-percentil+""}% all villages </td>\n            <td>${formatNumber(bValue)} res/h</td>\n            <td>${formatNumber(aValue)} res/h</td>\n            <td>${formatNumber(aValue-bValue)} res/h</td>\n       \n        </tr>`
 
     }
     let r = `\n        <table id="table_stats" class="scriptTable">\n
-    <tr>\n<td><input class="btn evt-confirm-btn btn-confirm-yes" id="btn_result" type="button" value="results"></td>\n            <td><input class="btn evt-confirm-btn btn-confirm-yes" id="btn_cluster" type="button" value="clusters"></td>\n
+    <tr>\n<td><input class="btn evt-confirm-btn btn-confirm-yes" id="btn_result" type="button" value="results"></td>\n            <td><input class="btn evt-confirm-btn btn-confirm-yes" id="btn_cluster" type="button" value="res/h"></td>\n
     <td>before</td>\n            <td>after</td>\n            <td>change</td>\n        </tr>
     \n        <tr>\n            <td colspan="2">indicator good (bad) vil.</td>\n            <td>${bCluster[1].keys.length} (${bCluster[0].keys.length-1})</td>\n            <td>${aCluster[1].keys.length} (${aCluster[0].keys.length-1})</td>\n            <td>${aCluster[1].keys.length-bCluster[1].keys.length} </td>\n       \n        </tr>
     ${statsRow(5)} ${statsRow(10)} ${statsRow(20)} ${statsRow(30)}  </table>\n    `;
     document.getElementById("table_stats").innerHTML = r,
         $("#btn_result").on("click", () => {
-            //createTableResults(n)
+            createTableResults(n)
         }
         ),
         $("#btn_cluster").on("click", () => {
-            //createTableClusters(o)
+            createTableClusters(n)
         }
         ),
         document.getElementById("sort_distance").addEventListener("click", () => {
@@ -1133,6 +1153,210 @@ async function createTable(e, t, n, o) {
     }
 }
 
+///////////////////////////////////////////////////////////////////create table for results////////////////////////////
+
+function createTableResults(list_production){
+    let html_end_result=`
+    <center><div id="table_results" style="height:800px;width:850px;overflow:auto">
+    <table id="table_stats"  class="scriptTableBalancerResult">
+    <tr>
+        <td>coord</td>
+        <td style="width:10%"><a href="#" id="order_points"><font  color="${textColor}">points</font></a></td>
+        <td style="width:10%"><a href="#" id="order_merchants"><font  color="${textColor}">merchants</font></a></td>
+        <td >
+            <img src="https://dsen.innogamescdn.com/asset/c2e59f13/graphic/buildings/main.png"/>
+            <a href="#" id="order_hours"><font  color="${textColor}">[dis]</font></a>
+        </td>
+        <td colspan="2">
+            <a href="#" class="order_deficit">
+                <center style="margin:10px"><img src="https://dsen.innogamescdn.com/asset/c2e59f13/graphic/buildings/wood.png"/></center>
+            </a>
+        </td>
+        <td colspan="2">
+            <a href="#" class="order_deficit">
+                <center style="margin:10px"><img src="https://dsen.innogamescdn.com/asset/c2e59f13/graphic/buildings/stone.png"/></center>
+            </a>
+        </td>
+        <td colspan="2">
+            <a href="#" class="order_deficit">
+                <center style="margin:10px"><img src="https://dsen.innogamescdn.com/asset/c2e59f13/graphic/buildings/iron.png"/></center>
+            </a>
+        </td>
+        <td >
+            <a href="#" class="order_wh">
+            <center style="margin:10px"><img src="https://dsen.innogamescdn.com/asset/04d88c84/graphic/buildings/storage.png"/></center>
+            </a>
+        </td>
+        <td >
+            <a href="#" class="order_whp">
+            <center style="margin:10px"><img src="https://dsen.innogamescdn.com/asset/04d88c84/graphic/buildings/storage.png"/></center>
+            </a>
+        </td>
+
+    </tr>`
+
+
+
+    for(let i=0;i<list_production.length;i++){
+
+
+
+        let greenColor="#013e27",greenColorEven="#026440"//green
+        let redColor="#5f0000",redColorEven="#9a0000"//red
+
+        if(i%2!=0){
+            header_status_wood =(parseInt(list_production[i].result_wood) >=0)?greenColor:redColor
+            header_status_stone=(parseInt(list_production[i].result_stone)>=0)?greenColor:redColor
+            header_status_iron =(parseInt(list_production[i].result_iron) >=0)?greenColor:redColor
+        }
+        else{
+            header_status_wood =(parseInt(list_production[i].result_wood) >=0)?greenColorEven:redColorEven
+            header_status_stone=(parseInt(list_production[i].result_stone)>=0)?greenColorEven:redColorEven
+            header_status_iron =(parseInt(list_production[i].result_iron) >=0)?greenColorEven:redColorEven
+        }
+
+        html_end_result+=`
+        <tr >
+            <td><a href="${game_data.link_base_pure}info_village&id=${list_production[i].id}"><font color="${textColor}">${list_production[i].coord}</font></a>
+            <td>${formatNumber(list_production[i].points)}</td>
+            <td><b>${list_production[i].merchants}</b> / ${list_production[i].merchants_total}</td>
+            <td>${formatNumber(parseInt(list_production[i].distanceToCentral*10)/10)}</td>
+            <td>${formatNumber(list_production[i].wood)}</td>
+            <td style="background-color:${header_status_wood}">${formatNumber(list_production[i].result_wood)}</td>
+            <td>${formatNumber(list_production[i].stone)}</td>
+            <td style="background-color:${header_status_stone}">${formatNumber(list_production[i].result_stone)}</td>
+            <td>${formatNumber(list_production[i].iron)}</td>
+            <td style="background-color:${header_status_iron}">${formatNumber(list_production[i].result_iron)}</td>
+            <td>${formatNumber(list_production[i].capacity)}</td>
+            <td style="background: #484D6D;">${formatNumber(parseInt(list_production[i].result_total/list_production[i].capacity*100))}%</td>
+
+        </tr>
+        `
+    }
+
+
+    html_end_result+=`
+    </table>
+    </div></center>
+    `
+    Dialog.show("content",html_end_result)
+    $("#order_points").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.points>o2.points)?1:(o1.points<o2.points)?-1:0
+        })
+        console.log("order by points")
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+    $("#order_merchants").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.merchants>o2.merchants)?1:(o1.merchants<o2.merchants)?-1:0
+        })
+        console.log("order by merchants")
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+    $("#order_hours").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.distanceToCentral>o2.distanceToCentral)?-1:(o1.distanceToCentral<o2.distanceToCentral)?1:0
+        })
+        console.log("order by construction time")
+        console.log(list_production)
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+    $(".order_deficit").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.result_total<o2.result_total)?1:(o1.result_total>o2.result_total)?-1:0
+
+        })
+        console.log("order by deficit/surplus")
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+    $(".order_wh").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.capacity>o2.capacity)?1:(o1.capacity<o2.capacity)?-1:0
+
+        })
+        console.log("order by warehouse capacity")
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+    $(".order_whp").on("click",()=>{
+        list_production.sort((o1,o2)=>{
+            return (o1.result_total/o1.capacity<o2.result_total/o2.capacity)?1:(o1.result_total/o1.capacity>o2.result_total/o2.capacity)?-1:0
+        })
+        console.log("order by warehouse capacity")
+        $(".popup_box_close").click()
+        createTableResults(list_production)
+
+    })
+}
+
+///////////////////////////////////////////////////////////////////create table for clusters////////////////////////////
+
+function createTableClusters(list_production){
+    let html_end_result=`
+    <center><div id="table_results" style="height:800px;width:700px;overflow:auto">
+    <table id="table_stats" class="scriptTable">
+    <tr>
+        <td style="width:5%">nr</td>
+        <td >coords</td>
+        <td >res/h to center</td>
+        <td >distance</td>
+        <td >lowest of % villages</td>
+    </tr>`
+
+    let withoutCenter = list_production.sort((a,b)=>a.acutalResPErH-b.acutalResPErH);
+    withoutCenter.pop()
+
+    let greenColor="#013e27",greenColorEven="#026440"//green
+    let orangeColor="#c56a1e", orangeColorEven="#a35718"
+    let redColor="#5f0000",redColorEven="#9a0000"//red
+
+
+
+    for(let i=0;i<withoutCenter.length;i++){
+
+        let gray="#202825",grayEven="#313e39"
+        let header_status_wh = (i%2==0)?gray:grayEven
+
+
+        let header_status_res ="";
+
+        if(i%2!=0){
+            header_status_res = aCluster[1].keys.includes(withoutCenter[i].coord)?withoutCenter[i].acutalResPErH/aCluster[1].stats.average>0.95?greenColor:orangeColor:redColor
+        }
+        else{
+            header_status_res = aCluster[1].keys.includes(withoutCenter[i].coord)?withoutCenter[i].acutalResPErH/aCluster[1].stats.average>0.95?greenColorEven:orangeColorEven:redColorEven
+        }
+
+        html_end_result+=`
+        <tr >
+            <td>${i+1}</td>
+            <td>${withoutCenter[i].name}</td>
+            <td style="background-color:${header_status_res}">${withoutCenter[i].acutalResPErH}</td>
+            <td>${withoutCenter[i].distanceToCentral.toFixed(1)}</td>
+            <td>${((withoutCenter.length-i+1)/withoutCenter.length*100).toFixed()}%</td>
+        </tr>
+        `
+    }
+
+
+    html_end_result+=`
+    </table>
+    </div></center>
+    `
+    Dialog.show("content",html_end_result)
+}
+
+
 function formatNumber(e) {
     return (new Intl.NumberFormat).format(e)
 }
@@ -1140,7 +1364,8 @@ function formatNumber(e) {
 function go() {
     travelTimePerUnit = parseInt(document.getElementById("nr_mtravel_time").value);
     tradersSendingFrequency = parseFloat(document.getElementById("nr_time_interval").value);
-    let whReserve = parseFloat(document.getElementById("nr_warehouse_reserve").value);
+    whReserve = parseFloat(document.getElementById("nr_warehouse_reserve").value);
+    overflowProtection = parseFloat(document.getElementById("overflowProtection").value);
     let groupId = parseInt(document.getElementById("nr_group_id").value);
     let middleVilage = document.getElementById("coord_mint_village").value.trim();
     start(middleVilage, {id: groupId, name: "Ost"})
