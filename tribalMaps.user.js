@@ -3,6 +3,8 @@
 // @version      1.1
 // @description  Draw quick lines with f and delte last one with r
 // @include      http://de*.diestaemmekarte.de/*
+// @include      https://de*.diestaemmekarte.de/*
+// @include      https://de*.tribalwarsmap.com/*/*
 // @icon         https://www.google.com/s2/favicons?domain=diestaemmekarte.de
 // @grant        none
 // ==/UserScript==
