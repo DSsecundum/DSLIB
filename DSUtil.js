@@ -47,6 +47,45 @@ DSUtil = {
         let calculated_time = hq_factor * build_time * (min_times[lvl - 1])
         return Math.round(calculated_time)
     },
+    //unfinisched
+    buidlTimeCostache(build_time, building_level, hq_level) {
+        let constantLvl={
+    1:1,
+    2:1,
+    3:0.112292,
+    4:0.289555,
+    5:0.46113,
+    6:0.606372,
+    7:0.723059,
+    8:0.815935,
+    9:0.889947,
+    10:0.948408,
+    11:0.994718,
+    12:1.031,
+    13:1.059231,
+    14:1.080939,
+    15:1.09729,
+    16:1.109156,
+    17:1.117308,
+    18:1.122392,
+    19:1.124817,
+    20:1.124917,
+    21:1.123181,
+    22:1.119778,
+    23:1.114984,
+    24:1.109038,
+    25:1.102077,
+    26:1.0942,
+    27:1.085601,
+    28:1.076369,
+    29:1.066566,
+    30:1.056291,
+}
+
+
+        let buildTime = build_time * Math.pow(1.2, (building_level -1)) * Math.pow(1.05, -hq_level) * constantLvl[building_level]
+return buildTime
+    }
     convertSecToTimeString(sec) {
         let time = ''
         let hours = Math.floor(sec / 3600)
